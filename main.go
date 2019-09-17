@@ -51,5 +51,5 @@ func main() {
 	r.HandleFunc("/", env.Status)
 	r.HandleFunc("/create", env.CreateTable)
 	// Bind to a port and pass our router in
-	log.Fatal(http.ListenAndServe(":8000", r))
+	log.Fatal(http.ListenAndServe(handlers.DetermineListenAddress(), r))
 }

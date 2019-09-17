@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 )
@@ -332,4 +333,11 @@ func (env *Env) CreateTable(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
+}
+func DetermineListenAddress() string {
+	port := os.Getenv("PORT")
+	if port == "" {
+		return ":8000"
+	}
+	return ":" + port
 }
