@@ -8,18 +8,21 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"time"
 )
 
 const (
-	keyHeader = "X-RapidAPI-Key"
-	token     = "9128771ca86462be53b41393a002341e"
-	ddbURI    = "postgres://xsqidgwwvwvgkm:1e82bd5c5b23996ee1ed11dfaa89447adc5c524999c574b6c24b67c0c1a22604@ec2-75-101-153-56.compute-1.amazonaws.com:5432/ddgva2m0b3akm5"
-	botToken  = "840859313:AAFfNUxxiaw6MIj9_5XSIeelJv7gns8qRqk"
-	chatID    = "@Chelsea"
-	testChat  = "-1001279121498"
+	timeFormat   = "15:04 2006-01-02"
+	keyHeader    = "X-RapidAPI-Key"
+	tokenAPIFoot = "9128771ca86462be53b41393a002341e"
+	// ddbURI       = "postgres://xsqidgwwvwvgkm:1e82bd5c5b23996ee1ed11dfaa89447adc5c524999c574b6c24b67c0c1a22604@ec2-75-101-153-56.compute-1.amazonaws.com:5432/ddgva2m0b3akm5"
+	botToken = "840859313:AAFfNUxxiaw6MIj9_5XSIeelJv7gns8qRqk"
+	oldBot   = "569665229:AAFFOoITLtgjpxsWtAoHTATMNv5mex53JXU"
+	chatID   = "@Chelsea"
+	testChat = "-1001279121498"
 )
 
 // https://server1.api-football.com/fixtures/team/49
@@ -84,7 +87,7 @@ type Lineup struct {
 				} `json:"substitutes"`
 				Coach string `json:"coach"`
 			} `json:"Chelsea"`
-		} `json:"lineUps"`
+		} `json:"lineUps,omitempty"`
 	} `json:"api"`
 }
 type Status struct {
@@ -125,7 +128,7 @@ func (env *Env) GetFixtures() {
 		log.Fatalln(err)
 	}
 	headers := http.Header{
-		"X-RapidAPI-Key": []string{"9128771ca86462be53b41393a002341e"},
+		keyHeader: []string{tokenAPIFoot},
 	}
 	request.Header = headers
 	resp, err := client.Do(request)
@@ -197,7 +200,7 @@ func (env *Env) GetLineup(fixture Fixture) string {
 		log.Fatalln(err)
 	}
 	headers := http.Header{
-		"X-RapidAPI-Key": []string{"9128771ca86462be53b41393a002341e"},
+		keyHeader: []string{tokenAPIFoot},
 	}
 	request.Header = headers
 	resp, err := client.Do(request)
@@ -209,45 +212,43 @@ func (env *Env) GetLineup(fixture Fixture) string {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	// fmt.Println(string(body))
 	lineup := Lineup{}
 	err = json.Unmarshal(body, &lineup)
-	// fmt.Println(lineup)
 	if err != nil {
-		log.Fatalln(err)
-	}
-	if lineup.API.Results == 0 {
-		time.Sleep(time.Second * 40)
+		log.Println("will check atfer 50 sec")
+		time.Sleep(time.Second * 50)
 		env.GetLineup(fixture)
 	}
-	text := "*Starting match*:%0A"
-	text += fixture.HomeTeam.TeamName + " - " + fixture.AwayTeam.TeamName + "%0A"
-	text += "%0A*Line-up*: %0A"
+	text := " *Match of the day:*\n"
+	text += fixture.HomeTeam.TeamName + " - *" + fixture.AwayTeam.TeamName + "*\n"
+	text += "\n *Line-up*:\n"
 	for _, player := range lineup.API.LineUps.Chelsea.StartXI {
-		text += player.Player + " (" + strconv.Itoa(player.Number) + ") %0A"
+		text += player.Player + " (" + strconv.Itoa(player.Number) + ")" + "\n"
 	}
-	text += "%0A*Substitutes*: %0A"
+
+	fmt.Println(text)
+	text += "\n *Substitutes*:\n"
 	for _, player := range lineup.API.LineUps.Chelsea.Substitutes {
-		text += player.Player + " (" + strconv.Itoa(player.Number) + ") %0A"
+		text += player.Player + " (" + strconv.Itoa(player.Number) + ")" + "\n"
 	}
-	text += "%0A*Match starts at*: %0A"
+	text += "\n *Match starts at*:\n"
 	loc, _ := time.LoadLocation("Asia/Tehran")
-	text += "🇮🇷*Tehran*: " + fixture.EventDate.In(loc).Format("2006-01-02 15:04") + "%0A"
+	text += "🇮🇷*Tehran*: " + fixture.EventDate.In(loc).Format(timeFormat) + "\n"
 	loc, _ = time.LoadLocation("Africa/Lagos")
-	text += "🇳🇬*Abuja*: " + fixture.EventDate.In(loc).Format("2006-01-02 15:04") + "%0A"
+	text += "🇳🇬*Abuja*: " + fixture.EventDate.In(loc).Format(timeFormat) + "\n"
 	loc, _ = time.LoadLocation("Europe/Moscow")
-	text += "🇷🇺*Moscow*: " + fixture.EventDate.In(loc).Format("2006-01-02 15:04") + "%0A"
+	text += "🇷🇺*Moscow*: " + fixture.EventDate.In(loc).Format(timeFormat) + "\n"
 	loc, _ = time.LoadLocation("Asia/Almaty")
-	text += "🇰🇿*Nur-Sultan*: " + fixture.EventDate.In(loc).Format("2006-01-02 15:04") + "%0A"
+	text += "🇰🇿*Nur-Sultan*: " + fixture.EventDate.In(loc).Format(timeFormat) + "\n"
 	loc, _ = time.LoadLocation("Europe/London")
-	text += "🇬🇧*London*: " + fixture.EventDate.In(loc).Format("2006-01-02 15:04") + "%0A"
+	text += "🇬🇧*London*: " + fixture.EventDate.In(loc).Format(timeFormat) + "\n"
 	return text
 }
 
 func (env *Env) SendPost(text string) {
 	uri := fmt.Sprintf(
 		"https://api.telegram.org/bot%s/sendMessage?chat_id=%s&text=%s&parse_mode=Markdown",
-		botToken, chatID, text)
+		botToken, chatID, url.QueryEscape(text))
 	resp, err := http.Get(uri)
 	if err != nil {
 		panic(err)
@@ -281,7 +282,7 @@ func (env *Env) StatusCheck() Status {
 		log.Fatalln(err)
 	}
 	headers := http.Header{
-		"X-RapidAPI-Key": []string{"9128771ca86462be53b41393a002341e"},
+		keyHeader: []string{tokenAPIFoot},
 	}
 	request.Header = headers
 	resp, err := client.Do(request)
@@ -293,10 +294,9 @@ func (env *Env) StatusCheck() Status {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	// fmt.Println(string(body))
 	status := Status{}
 	err = json.Unmarshal(body, &status)
-	// fmt.Println(lineup)
+
 	if err != nil {
 		log.Fatalln(err)
 	}
