@@ -112,12 +112,13 @@ type Env struct {
 	DB *sql.DB
 }
 
-func (env *Env) GetFixtures() {
-	status := env.StatusCheck()
+func (env *Env) GetFixtures(fixtureID int) {
 	now := time.Now()
+	status := env.StatusCheck()
 	if status.API.Status.RequestsLeft == 0 {
+		fmt.Println("reached limit request")
 		time.Sleep(time.Hour)
-		env.GetFixtures()
+		env.GetFixtures(fixtureID)
 	}
 	uri := "https://server1.api-football.com/fixtures/team/49"
 
@@ -147,7 +148,7 @@ func (env *Env) GetFixtures() {
 	}
 	if len(fixtures.API.Fixtures) > 0 {
 		for _, fixture := range fixtures.API.Fixtures {
-			if fixture.StatusShort == "NS" {
+			if fixture.StatusShort == "NS" && fixture.FixtureID != fixtureID {
 				query := `
 					INSERT INTO fixtures (id, league_id, date, home_team, away_team)
 					VALUES ($1, $2, $3, $4, $5)
@@ -165,7 +166,7 @@ func (env *Env) GetFixtures() {
 	}
 	query := `
 		DELETE FROM fixtures
-		WHERE date < $1`
+		WHERE date <= $1`
 	_, err = env.DB.Exec(query, now)
 	if err != nil {
 		panic(err)
@@ -214,7 +215,9 @@ func (env *Env) GetLineup(fixture Fixture) string {
 	}
 	lineup := Lineup{}
 	err = json.Unmarshal(body, &lineup)
-	if err != nil {
+	if err != nil || lineup.API.LineUps.Chelsea.Formation == "" || lineup.API.Results == 0 {
+		log.Println("lineup result: ", lineup.API.Results)
+		log.Println("lineup formation: ", lineup.API.LineUps.Chelsea.Formation)
 		log.Println("will check atfer 50 sec")
 		time.Sleep(time.Second * 50)
 		env.GetLineup(fixture)
@@ -261,15 +264,18 @@ func (env *Env) SendPost(text string) {
 }
 
 func (env *Env) SetUp() {
-	env.GetFixtures()
-	fixture := env.NearestFixture()
-	fmt.Println("vs team: ", fixture.HomeTeam.TeamName, fixture.AwayTeam.TeamName)
-	fmt.Println("will send post after ", fixture.TimeTo-(time.Minute*50))
-	time.Sleep(fixture.TimeTo - (time.Minute * 50))
-	text := env.GetLineup(fixture)
-	env.SendPost(text)
-	env.DeleteFixture(fixture)
-	env.SetUp()
+	var postedFixture int
+	for {
+		env.GetFixtures(postedFixture)
+		fixture := env.NearestFixture()
+		fmt.Println("vs team: ", fixture.HomeTeam.TeamName, fixture.AwayTeam.TeamName, "id: ", fixture.FixtureID)
+		fmt.Println("will send post after ", fixture.TimeTo-(time.Minute*55))
+		time.Sleep(fixture.TimeTo - (time.Minute * 55))
+		text := env.GetLineup(fixture)
+		env.SendPost(text)
+		env.DeleteFixture(fixture)
+		postedFixture = fixture.FixtureID
+	}
 }
 
 func (env *Env) StatusCheck() Status {
@@ -319,6 +325,7 @@ func (env *Env) DeleteFixture(fixture Fixture) {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("fixture deleted: ", fixture)
 }
 func (env *Env) CreateTable(w http.ResponseWriter, r *http.Request) {
 	query := `

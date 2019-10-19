@@ -40,6 +40,7 @@ func main() {
 	}
 
 	fmt.Println("Successfully connected!")
+
 	go env.SetUp()
 
 	r := mux.NewRouter()
