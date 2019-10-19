@@ -43,7 +43,7 @@ func main() {
 	go env.SetUp()
 
 	r := mux.NewRouter()
-	// Routes consist of a path and a handler function.
+	// Routes consist of a path and a handler function  .
 	r.HandleFunc("/", env.Status)
 	r.HandleFunc("/create", env.CreateTable)
 	// Bind to a port and pass our router in
