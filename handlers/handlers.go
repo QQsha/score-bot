@@ -12,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"time"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -116,7 +117,8 @@ func (env *Env) GetFixtures(fixtureID int) {
 	now := time.Now()
 	status := env.StatusCheck()
 	if status.API.Status.RequestsLeft == 0 {
-		fmt.Println("reached limit request")
+
+		logrus.Info("reached limit request")
 		time.Sleep(time.Hour)
 		env.GetFixtures(fixtureID)
 	}
@@ -229,7 +231,7 @@ func (env *Env) GetLineup(fixture Fixture) string {
 		text += player.Player + " (" + strconv.Itoa(player.Number) + ")" + "\n"
 	}
 
-	fmt.Println(text)
+	logrus.Info(text)
 	text += "\n *Substitutes*:\n"
 	for _, player := range lineup.API.LineUps.Chelsea.Substitutes {
 		text += player.Player + " (" + strconv.Itoa(player.Number) + ")" + "\n"
@@ -260,7 +262,7 @@ func (env *Env) SendPost(text string) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	fmt.Println(string(body))
+	logrus.Info(string(body))
 }
 
 func (env *Env) SetUp() {
@@ -268,8 +270,8 @@ func (env *Env) SetUp() {
 	for {
 		env.GetFixtures(postedFixture)
 		fixture := env.NearestFixture()
-		fmt.Println("vs team: ", fixture.HomeTeam.TeamName, fixture.AwayTeam.TeamName, "id: ", fixture.FixtureID)
-		fmt.Println("will send post after ", fixture.TimeTo-(time.Minute*55))
+		logrus.Info("vs team: ", fixture.HomeTeam.TeamName, fixture.AwayTeam.TeamName, "id: ", fixture.FixtureID)
+		logrus.Info("will send post after ", fixture.TimeTo-(time.Minute*55))
 		time.Sleep(fixture.TimeTo - (time.Minute * 55))
 		text := env.GetLineup(fixture)
 		env.SendPost(text)
@@ -325,7 +327,7 @@ func (env *Env) DeleteFixture(fixture Fixture) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("fixture deleted: ", fixture)
+	logrus.Info("fixture deleted: ", fixture)
 }
 func (env *Env) CreateTable(w http.ResponseWriter, r *http.Request) {
 	query := `

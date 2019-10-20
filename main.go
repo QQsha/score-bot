@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -11,6 +10,7 @@ import (
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
+	"github.com/sirupsen/logrus"
 )
 
 type Env struct {
@@ -38,8 +38,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	fmt.Println("Successfully connected!")
+	logrus.Info("Successfully connected!")
+	// fmt.Println("Successfully connected!")
 
 	go env.SetUp()
 
