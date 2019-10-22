@@ -42,7 +42,7 @@ func main() {
 	// fmt.Println("Successfully connected!")
 
 	go env.SetUp()
-
+	go handlers.Updater()
 	r := mux.NewRouter()
 	// Routes consist of a path and a handler function  .
 	r.HandleFunc("/", env.Status)

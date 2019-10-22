@@ -12,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"time"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -349,4 +350,10 @@ func DetermineListenAddress() string {
 		return ":8000"
 	}
 	return ":" + port
+}
+func Updater() {
+	for {
+		logrus.Info("server is up")
+		time.Sleep(time.Hour)
+	}
 }
