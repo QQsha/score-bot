@@ -354,6 +354,6 @@ func DetermineListenAddress() string {
 func Updater() {
 	for {
 		logrus.Info("server is up")
-		time.Sleep(time.Hour)
+		time.Sleep(25 * time.Minute)
 	}
 }
