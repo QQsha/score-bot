@@ -354,6 +354,13 @@ func DetermineListenAddress() string {
 func Updater() {
 	for {
 		logrus.Info("server is up")
+		uri := "https://chelsea-score-bot.herokuapp.com/"
+		client := http.Client{}
+		request, err := http.NewRequest("GET", uri, nil)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		client.Do(request)
 		time.Sleep(25 * time.Minute)
 	}
 }
