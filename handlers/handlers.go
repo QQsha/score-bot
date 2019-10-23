@@ -273,7 +273,7 @@ func (env *Env) SetUp() {
 		fixture := env.NearestFixture()
 		logrus.Info("vs team: ", fixture.HomeTeam.TeamName, fixture.AwayTeam.TeamName, "id: ", fixture.FixtureID)
 		logrus.Info("will send post after ", fixture.TimeTo-(time.Minute*55))
-		time.Sleep(fixture.TimeTo - (time.Minute * 55))
+		time.Sleep(fixture.TimeTo - (time.Minute * 59))
 		text := env.GetLineup(fixture)
 		env.SendPost(text)
 		env.DeleteFixture(fixture)
