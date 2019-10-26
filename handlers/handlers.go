@@ -226,7 +226,7 @@ func (env *Env) GetLineup(fixture Fixture) string {
 		env.GetLineup(fixture)
 	}
 	text := " *Match of the day:*\n"
-	text += fixture.HomeTeam.TeamName + " - *" + fixture.AwayTeam.TeamName + "*\n"
+	text += "*" + fixture.HomeTeam.TeamName + " - " + fixture.AwayTeam.TeamName + "*\n"
 	text += "\n *Line-up*:\n"
 	for _, player := range lineup.API.LineUps.Chelsea.StartXI {
 		text += player.Player + " (" + strconv.Itoa(player.Number) + ")" + "\n"

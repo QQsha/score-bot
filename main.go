@@ -41,7 +41,7 @@ func main() {
 	logrus.Info("Successfully connected!")
 	// fmt.Println("Successfully connected!")
 
-	go env.SetUp()
+	env.SetUp()
 	go handlers.Updater()
 	r := mux.NewRouter()
 	// Routes consist of a path and a handler function  .
