@@ -40,13 +40,13 @@ func main() {
 	}
 	logrus.Info("Successfully connected!")
 	// fmt.Println("Successfully connected!")
-
-	env.SetUp()
 	go handlers.Updater()
+
 	r := mux.NewRouter()
 	// Routes consist of a path and a handler function  .
 	r.HandleFunc("/", env.Status)
 	r.HandleFunc("/create", env.CreateTable)
+	r.HandleFunc("/start", env.Start)
 	// Bind to a port and pass our router in
 	log.Fatal(http.ListenAndServe(handlers.DetermineListenAddress(), r))
 }

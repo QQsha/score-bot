@@ -254,7 +254,7 @@ func (env *Env) GetLineup(fixture Fixture) string {
 func (env *Env) SendPost(text string) {
 	uri := fmt.Sprintf(
 		"https://api.telegram.org/bot%s/sendMessage?chat_id=%s&text=%s&parse_mode=Markdown",
-		botToken, chatID, url.QueryEscape(text))
+		botToken, testChat, url.QueryEscape(text))
 	resp, err := http.Get(uri)
 	if err != nil {
 		panic(err)
@@ -268,17 +268,15 @@ func (env *Env) SendPost(text string) {
 
 func (env *Env) SetUp() {
 	var postedFixture int
-	for {
-		env.GetFixtures(postedFixture)
-		fixture := env.NearestFixture()
-		logrus.Info("vs team: ", fixture.HomeTeam.TeamName, fixture.AwayTeam.TeamName, "id: ", fixture.FixtureID)
-		logrus.Info("will send post after ", fixture.TimeTo-(time.Minute*55))
-		time.Sleep(fixture.TimeTo - (time.Minute * 59))
-		text := env.GetLineup(fixture)
-		env.SendPost(text)
-		env.DeleteFixture(fixture)
-		postedFixture = fixture.FixtureID
-	}
+	env.GetFixtures(postedFixture)
+	fixture := env.NearestFixture()
+	logrus.Info("vs team: ", fixture.HomeTeam.TeamName, fixture.AwayTeam.TeamName, " id: ", fixture.FixtureID)
+	logrus.Info("will send post after ", fixture.TimeTo-(time.Minute*55))
+	time.Sleep(fixture.TimeTo - (time.Minute * 55))
+	text := env.GetLineup(fixture)
+	env.SendPost(text)
+	env.DeleteFixture(fixture)
+	postedFixture = fixture.FixtureID
 }
 
 func (env *Env) StatusCheck() Status {
@@ -362,5 +360,10 @@ func Updater() {
 		}
 		client.Do(request)
 		time.Sleep(25 * time.Minute)
+	}
+}
+func (env *Env) Start(w http.ResponseWriter, r *http.Request) {
+	for {
+		env.SetUp()
 	}
 }
