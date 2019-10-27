@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -266,7 +267,7 @@ func (env *Env) SendPost(text string) {
 	logrus.Info(string(body))
 }
 
-func (env *Env) SetUp() {
+func (env *Env) SetUp(wg *sync.WaitGroup) {
 	var postedFixture int
 	env.GetFixtures(postedFixture)
 	fixture := env.NearestFixture()
@@ -277,6 +278,7 @@ func (env *Env) SetUp() {
 	env.SendPost(text)
 	env.DeleteFixture(fixture)
 	postedFixture = fixture.FixtureID
+	wg.Done()
 }
 
 func (env *Env) StatusCheck() Status {
@@ -362,8 +364,12 @@ func Updater() {
 		time.Sleep(25 * time.Minute)
 	}
 }
+
 func (env *Env) Start(w http.ResponseWriter, r *http.Request) {
+	var wg sync.WaitGroup
 	for {
-		env.SetUp()
+		wg.Add(1)
+		go env.SetUp(&wg)
+		wg.Wait()
 	}
 }
