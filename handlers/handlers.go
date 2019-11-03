@@ -25,7 +25,7 @@ const (
 	botToken = "840859313:AAFfNUxxiaw6MIj9_5XSIeelJv7gns8qRqk"
 	oldBot   = "569665229:AAFFOoITLtgjpxsWtAoHTATMNv5mex53JXU"
 	chatID   = "@Chelsea"
-	testChat = "-1001279121498"
+	testChat = "@chelseafuns"
 )
 
 // https://server1.api-football.com/fixtures/team/49
@@ -219,7 +219,7 @@ func (env *Env) GetLineup(fixture Fixture) string {
 	}
 	lineup := Lineup{}
 	err = json.Unmarshal(body, &lineup)
-	if err != nil || lineup.API.LineUps.Chelsea.Formation == "" || lineup.API.Results == 0 {
+	if err != nil || len(lineup.API.LineUps.Chelsea.StartXI) == 0 || lineup.API.Results == 0 {
 		log.Println("lineup result: ", lineup.API.Results)
 		log.Println("lineup formation: ", lineup.API.LineUps.Chelsea.Formation)
 		log.Println("will check atfer 50 sec")
@@ -228,7 +228,7 @@ func (env *Env) GetLineup(fixture Fixture) string {
 	}
 	text := " *Match of the day:*\n"
 	text += "*" + fixture.HomeTeam.TeamName + " - " + fixture.AwayTeam.TeamName + "*\n"
-	text += "\n *Line-up*:\n"
+	text += "\n *Line-up (" + lineup.API.LineUps.Chelsea.Formation + "):*\n"
 	for _, player := range lineup.API.LineUps.Chelsea.StartXI {
 		text += player.Player + " (" + strconv.Itoa(player.Number) + ")" + "\n"
 	}
@@ -255,7 +255,7 @@ func (env *Env) GetLineup(fixture Fixture) string {
 func (env *Env) SendPost(text string) {
 	uri := fmt.Sprintf(
 		"https://api.telegram.org/bot%s/sendMessage?chat_id=%s&text=%s&parse_mode=Markdown",
-		botToken, testChat, url.QueryEscape(text))
+		botToken, chatID, url.QueryEscape(text))
 	resp, err := http.Get(uri)
 	if err != nil {
 		panic(err)
@@ -267,8 +267,7 @@ func (env *Env) SendPost(text string) {
 	logrus.Info(string(body))
 }
 
-func (env *Env) SetUp(wg *sync.WaitGroup) {
-	var postedFixture int
+func (env *Env) SetUp(wg *sync.WaitGroup, postedFixture int) int {
 	env.GetFixtures(postedFixture)
 	fixture := env.NearestFixture()
 	logrus.Info("vs team: ", fixture.HomeTeam.TeamName, fixture.AwayTeam.TeamName, " id: ", fixture.FixtureID)
@@ -276,9 +275,10 @@ func (env *Env) SetUp(wg *sync.WaitGroup) {
 	time.Sleep(fixture.TimeTo - (time.Minute * 55))
 	text := env.GetLineup(fixture)
 	env.SendPost(text)
-	env.DeleteFixture(fixture)
+	// env.DeleteFixture(fixture)
 	postedFixture = fixture.FixtureID
 	wg.Done()
+	return postedFixture
 }
 
 func (env *Env) StatusCheck() Status {
@@ -328,7 +328,7 @@ func (env *Env) DeleteFixture(fixture Fixture) {
 	if err != nil {
 		panic(err)
 	}
-	logrus.Info("fixture deleted: ", fixture)
+	logrus.Info("fixture deleted: ", fixture.FixtureID)
 }
 func (env *Env) CreateTable(w http.ResponseWriter, r *http.Request) {
 	query := `
@@ -366,10 +366,15 @@ func Updater() {
 }
 
 func (env *Env) Start(w http.ResponseWriter, r *http.Request) {
-	var wg sync.WaitGroup
+	var (
+		wg            sync.WaitGroup
+		postedFixture int
+	)
 	for {
 		wg.Add(1)
-		go env.SetUp(&wg)
+		go func() {
+			postedFixture = env.SetUp(&wg, postedFixture)
+		}()
 		wg.Wait()
 	}
 }
