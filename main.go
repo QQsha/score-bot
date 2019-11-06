@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"database/sql"
 
@@ -49,5 +50,5 @@ func main() {
 	r.HandleFunc("/create", env.CreateTable)
 	// r.HandleFunc("/start", env.Start)
 	// Bind to a port and pass our router in
-	log.Fatal(http.ListenAndServe(handlers.DetermineListenAddress(), r))
+	log.Fatal(http.ListenAndServe(":"+os.Getenv("PORT"), r))
 }
