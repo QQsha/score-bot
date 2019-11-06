@@ -41,7 +41,7 @@ func main() {
 	}
 	logrus.Info("Successfully connected!")
 	// fmt.Println("Successfully connected!")
-	env.Start()
+	go env.Start()
 	go handlers.Updater()
 
 	r := mux.NewRouter()
