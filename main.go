@@ -18,12 +18,12 @@ type Env struct {
 	DB *sql.DB
 }
 
-const (
-	host   = "0.0.0.0"
-	port   = 5432
-	user   = "postgres"
-	dbname = "qqsha"
-)
+// const (
+// 	host   = "0.0.0.0"
+// 	port   = 5432
+// 	user   = "postgres"
+// 	dbname = "qqsha"
+// )
 
 func main() {
 	// psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable",
