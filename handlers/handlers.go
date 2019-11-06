@@ -365,7 +365,7 @@ func Updater() {
 	}
 }
 
-func (env *Env) Start(w http.ResponseWriter, r *http.Request) {
+func (env *Env) Start() {
 	var (
 		wg            sync.WaitGroup
 		postedFixture int
