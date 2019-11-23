@@ -40,7 +40,6 @@ func main() {
 		panic(err)
 	}
 	logrus.Info("Successfully connected!")
-	// fmt.Println("Successfully connected!")
 	go env.Start()
 	go handlers.Updater()
 
@@ -48,7 +47,6 @@ func main() {
 	// Routes consist of a path and a handler function  .
 	r.HandleFunc("/", env.Status)
 	r.HandleFunc("/create", env.CreateTable)
-	// r.HandleFunc("/start", env.Start)
 	// Bind to a port and pass our router in
 	log.Fatal(http.ListenAndServe(":"+os.Getenv("PORT"), r))
 }
