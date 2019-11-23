@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"os"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -255,7 +254,7 @@ func (env *Env) GetLineup(fixture Fixture) string {
 func (env *Env) SendPost(text string) {
 	uri := fmt.Sprintf(
 		"https://api.telegram.org/bot%s/sendMessage?chat_id=%s&text=%s&parse_mode=Markdown",
-		botToken, chatID, url.QueryEscape(text))
+		botToken, testChat, url.QueryEscape(text))
 	resp, err := http.Get(uri)
 	if err != nil {
 		panic(err)
@@ -267,8 +266,8 @@ func (env *Env) SendPost(text string) {
 	logrus.Info(string(body))
 }
 
-func (env *Env) SetUp(wg *sync.WaitGroup, postedFixture int) int {
-	env.GetFixtures(postedFixture)
+func (env *Env) SetUp(postedFixture *int) int {
+	env.GetFixtures(*postedFixture)
 	fixture := env.NearestFixture()
 	logrus.Info("vs team: ", fixture.HomeTeam.TeamName, fixture.AwayTeam.TeamName, " id: ", fixture.FixtureID)
 	logrus.Info("will send post after ", fixture.TimeTo-(time.Minute*55))
@@ -276,9 +275,8 @@ func (env *Env) SetUp(wg *sync.WaitGroup, postedFixture int) int {
 	text := env.GetLineup(fixture)
 	env.SendPost(text)
 	// env.DeleteFixture(fixture)
-	postedFixture = fixture.FixtureID
-	wg.Done()
-	return postedFixture
+	postedFixture = &fixture.FixtureID
+	return *postedFixture
 }
 
 func (env *Env) StatusCheck() Status {
@@ -367,14 +365,9 @@ func Updater() {
 
 func (env *Env) Start() {
 	var (
-		wg            sync.WaitGroup
 		postedFixture int
 	)
 	for {
-		wg.Add(1)
-		go func() {
-			postedFixture = env.SetUp(&wg, postedFixture)
-		}()
-		wg.Wait()
+		postedFixture = env.SetUp(&postedFixture)
 	}
 }
