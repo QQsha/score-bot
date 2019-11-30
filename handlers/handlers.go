@@ -27,7 +27,7 @@ const (
 	testChat = "@chelseafuns"
 )
 
-// https://server1.api-football.com/fixtures/team/49
+// https://server2.api-football.com/fixtures/team/49
 type Fixtures struct {
 	API struct {
 		Results  int       `json:"results"`
@@ -123,7 +123,7 @@ func (env *Env) GetFixtures(fixtureID int) {
 		time.Sleep(time.Hour)
 		env.GetFixtures(fixtureID)
 	}
-	uri := "https://server1.api-football.com/fixtures/team/49"
+	uri := "https://server2.api-football.com/fixtures/team/49"
 
 	client := http.Client{}
 
@@ -169,8 +169,8 @@ func (env *Env) GetFixtures(fixtureID int) {
 	}
 	query := `
 		DELETE FROM fixtures
-		WHERE date <= $1`
-	_, err = env.DB.Exec(query, now)
+		WHERE date <= $1 or id = $2`
+	_, err = env.DB.Exec(query, now, fixtureID)
 	if err != nil {
 		panic(err)
 	}
@@ -195,7 +195,7 @@ func (env *Env) NearestFixture() Fixture {
 }
 
 func (env *Env) GetLineup(fixture Fixture) string {
-	uri := "https://server1.api-football.com/lineups/" + strconv.Itoa(fixture.FixtureID)
+	uri := "https://server2.api-football.com/lineups/" + strconv.Itoa(fixture.FixtureID)
 
 	client := http.Client{}
 
@@ -254,7 +254,7 @@ func (env *Env) GetLineup(fixture Fixture) string {
 func (env *Env) SendPost(text string) {
 	uri := fmt.Sprintf(
 		"https://api.telegram.org/bot%s/sendMessage?chat_id=%s&text=%s&parse_mode=Markdown",
-		botToken, testChat, url.QueryEscape(text))
+		botToken, chatID, url.QueryEscape(text))
 	resp, err := http.Get(uri)
 	if err != nil {
 		panic(err)
@@ -280,7 +280,7 @@ func (env *Env) SetUp(postedFixture *int) int {
 }
 
 func (env *Env) StatusCheck() Status {
-	uri := "https://server1.api-football.com/status"
+	uri := "https://server2.api-football.com/status"
 
 	client := http.Client{}
 
