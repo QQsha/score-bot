@@ -207,6 +207,7 @@ func (env *Env) GetLineup(fixture Fixture) string {
 		keyHeader: []string{tokenAPIFoot},
 	}
 	request.Header = headers
+Request:
 	resp, err := client.Do(request)
 	if err != nil {
 		log.Fatalln(err)
@@ -223,7 +224,8 @@ func (env *Env) GetLineup(fixture Fixture) string {
 		log.Println("lineup formation: ", lineup.API.LineUps.Chelsea.Formation)
 		log.Println("will check atfer 50 sec")
 		time.Sleep(time.Second * 50)
-		env.GetLineup(fixture)
+		goto Request
+		// env.GetLineup(fixture)
 	}
 	text := " *Match of the day:*\n"
 	text += "*" + fixture.HomeTeam.TeamName + " - " + fixture.AwayTeam.TeamName + "*\n"
@@ -254,7 +256,7 @@ func (env *Env) GetLineup(fixture Fixture) string {
 func (env *Env) SendPost(text string) {
 	uri := fmt.Sprintf(
 		"https://api.telegram.org/bot%s/sendMessage?chat_id=%s&text=%s&parse_mode=Markdown",
-		botToken, chatID, url.QueryEscape(text))
+		botToken, testChat, url.QueryEscape(text))
 	resp, err := http.Get(uri)
 	if err != nil {
 		panic(err)
