@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	timeFormat   = "15:04 2006-01-02"
+	timeFormat   = "15:04"
 	keyHeader    = "X-RapidAPI-Key"
 	tokenAPIFoot = "9128771ca86462be53b41393a002341e"
 	// ddbURI       = "postgres://xsqidgwwvwvgkm:1e82bd5c5b23996ee1ed11dfaa89447adc5c524999c574b6c24b67c0c1a22604@ec2-75-101-153-56.compute-1.amazonaws.com:5432/ddgva2m0b3akm5"
@@ -227,7 +227,7 @@ Request:
 		goto Request
 		// env.GetLineup(fixture)
 	}
-	text := " *Match of the day:*\n"
+	text := "📣💙*Match of the day:*💙📣\n"
 	text += "*" + fixture.HomeTeam.TeamName + " - " + fixture.AwayTeam.TeamName + "*\n"
 	text += "\n *Line-up (" + lineup.API.LineUps.Chelsea.Formation + "):*\n"
 	for _, player := range lineup.API.LineUps.Chelsea.StartXI {
@@ -239,7 +239,7 @@ Request:
 	for _, player := range lineup.API.LineUps.Chelsea.Substitutes {
 		text += player.Player + " (" + strconv.Itoa(player.Number) + ")" + "\n"
 	}
-	text += "\n *Match starts at*:\n"
+	text += "\n *Match starts today at*:\n"
 	loc, _ := time.LoadLocation("Asia/Tehran")
 	text += "🇮🇷*Tehran*: " + fixture.EventDate.In(loc).Format(timeFormat) + "\n"
 	loc, _ = time.LoadLocation("Africa/Lagos")
@@ -256,7 +256,7 @@ Request:
 func (env *Env) SendPost(text string) {
 	uri := fmt.Sprintf(
 		"https://api.telegram.org/bot%s/sendMessage?chat_id=%s&text=%s&parse_mode=Markdown",
-		botToken, testChat, url.QueryEscape(text))
+		botToken, chatID, url.QueryEscape(text))
 	resp, err := http.Get(uri)
 	if err != nil {
 		panic(err)
