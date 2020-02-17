@@ -123,7 +123,7 @@ func (env *Env) GetFixtures(fixtureID int) {
 		time.Sleep(time.Hour)
 		env.GetFixtures(fixtureID)
 	}
-	uri := "https://server2.api-football.com/fixtures/team/49"
+	uri := "http://v2.api-football.com/fixtures/team/49"
 
 	client := http.Client{}
 
@@ -195,7 +195,7 @@ func (env *Env) NearestFixture() Fixture {
 }
 
 func (env *Env) GetLineup(fixture Fixture) string {
-	uri := "https://server2.api-football.com/lineups/" + strconv.Itoa(fixture.FixtureID)
+	uri := "http://v2.api-football.com/lineups/" + strconv.Itoa(fixture.FixtureID)
 
 	client := http.Client{}
 
@@ -282,7 +282,7 @@ func (env *Env) SetUp(postedFixture *int) int {
 }
 
 func (env *Env) StatusCheck() Status {
-	uri := "https://server2.api-football.com/status"
+	uri := "http://v2.api-football.com/status"
 
 	client := http.Client{}
 
