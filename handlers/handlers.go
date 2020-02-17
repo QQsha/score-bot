@@ -315,10 +315,15 @@ func (env *Env) StatusCheck() Status {
 func (env *Env) Status(w http.ResponseWriter, r *http.Request) {
 	status := env.StatusCheck()
 	reqLeft := strconv.Itoa(status.API.Status.RequestsLeft)
-	_, err := io.WriteString(w, `{"Requests remaining":`+reqLeft+`}`)
-	if err != nil {
-		log.Fatalln(err)
-	}
+
+	fixture := env.NearestFixture()
+	io.WriteString(w, "Next match: "+fixture.HomeTeam.TeamName+" vs "+fixture.AwayTeam.TeamName+"\n")
+	timeLeft := (fixture.TimeTo - (time.Minute * 55)).String()
+	io.WriteString(w, "Post will be in: "+timeLeft+"\n")
+	io.WriteString(w, "Fixture ID: "+strconv.Itoa(fixture.FixtureID)+"\n")
+	logrus.Info("vs team: ", fixture.HomeTeam.TeamName, fixture.AwayTeam.TeamName, " id: ", fixture.FixtureID)
+	logrus.Info("will send post after ", fixture.TimeTo-(time.Minute*55))
+	io.WriteString(w, "Requests remaining:"+reqLeft)
 }
 func (env *Env) DeleteFixture(fixture Fixture) {
 	query := `

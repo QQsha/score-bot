@@ -48,5 +48,9 @@ func main() {
 	r.HandleFunc("/", env.Status)
 	r.HandleFunc("/create", env.CreateTable)
 	// Bind to a port and pass our router in
-	log.Fatal(http.ListenAndServe(":"+os.Getenv("PORT"), r))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "80"
+	}
+	log.Fatal(http.ListenAndServe(":"+port, r))
 }
