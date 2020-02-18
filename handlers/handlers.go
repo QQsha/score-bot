@@ -21,8 +21,7 @@ const (
 	keyHeader    = "X-RapidAPI-Key"
 	tokenAPIFoot = "9128771ca86462be53b41393a002341e"
 	// ddbURI       = "postgres://xsqidgwwvwvgkm:1e82bd5c5b23996ee1ed11dfaa89447adc5c524999c574b6c24b67c0c1a22604@ec2-75-101-153-56.compute-1.amazonaws.com:5432/ddgva2m0b3akm5"
-	botToken = "840859313:AAFfNUxxiaw6MIj9_5XSIeelJv7gns8qRqk"
-	oldBot   = "569665229:AAFFOoITLtgjpxsWtAoHTATMNv5mex53JXU"
+	
 	chatID   = "@Chelsea"
 	testChat = "@chelseafuns"
 )
@@ -254,6 +253,7 @@ Request:
 }
 
 func (env *Env) SendPost(text string) {
+	botToken := os.Getenv("SCORE_BOT")
 	uri := fmt.Sprintf(
 		"https://api.telegram.org/bot%s/sendMessage?chat_id=%s&text=%s&parse_mode=Markdown",
 		botToken, chatID, url.QueryEscape(text))
