@@ -10,7 +10,7 @@ class MyForm extends React.Component {
       event.preventDefault();
       const data = new FormData(event.target);
       
-      fetch('http://localhost:80/add_new_spam', {
+      fetch('https://chelsea-score-bot.herokuapp.com/add_new_spam', {
         method: 'POST',
         body: data,
       });

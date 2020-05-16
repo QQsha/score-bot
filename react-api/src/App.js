@@ -10,7 +10,7 @@
         spamWords: []
       }
       componentDidMount() {
-        fetch('http://localhost:80/get_spam')
+        fetch('https://chelsea-score-bot.herokuapp.com/get_spam')
         .then(res => res.json())
         .then((data) => {
           this.setState({ spamWords: data })
