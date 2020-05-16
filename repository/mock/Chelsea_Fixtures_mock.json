@@ -1,0 +1,83 @@
+{
+	"api": {
+		"results": 438,
+		"fixtures": [
+			{
+				"fixture_id": 194204,
+				"league_id": 701,
+				"league": {
+					"name": "Premier League",
+					"country": "England",
+					"logo": "https:\/\/media.api-football.com\/leagues\/56.png",
+					"flag": "https:\/\/media.api-football.com\/flags\/gb.svg"
+				},
+				"event_date": "2020-04-26T10:07:00+00:00",
+				"event_timestamp": 1281803400,
+				"firstHalfStart": null,
+				"secondHalfStart": null,
+				"round": "Regular Season - 38",
+				"status": "Match Finished",
+				"statusShort": "NS",
+				"elapsed": 90,
+				"venue": "Stamford Bridge (London)",
+				"referee": null,
+				"homeTeam": {
+					"team_id": 49,
+					"team_name": "Chelsea",
+					"logo": "https:\/\/media.api-football.com\/teams\/49.png"
+				},
+				"awayTeam": {
+					"team_id": 60,
+					"team_name": "West Brom",
+					"logo": "https:\/\/media.api-football.com\/teams\/60.png"
+				},
+				"goalsHomeTeam": 6,
+				"goalsAwayTeam": 0,
+				"score": {
+					"halftime": "2-0",
+					"fulltime": "6-0",
+					"extratime": null,
+					"penalty": null
+				}
+			},
+			{
+				"fixture_id": 194563,
+				"league_id": 701,
+				"league": {
+					"name": "Premier League",
+					"country": "England",
+					"logo": "https:\/\/media.api-football.com\/leagues\/56.png",
+					"flag": "https:\/\/media.api-football.com\/flags\/gb.svg"
+				},
+				"event_date": "2020-04-26T08:13:02+00:00",
+				"event_timestamp": 1282407300,
+				"firstHalfStart": null,
+				"secondHalfStart": null,
+				"round": "Regular Season - 37",
+				"status": "Match Finished",
+				"statusShort": "NS",
+				"elapsed": 90,
+				"venue": "The DW Stadium (Wigan)",
+				"referee": null,
+				"homeTeam": {
+					"team_id": 61,
+					"team_name": "Wigan",
+					"logo": "https:\/\/media.api-football.com\/teams\/61.png"
+				},
+				"awayTeam": {
+					"team_id": 49,
+					"team_name": "Chelsea",
+					"logo": "https:\/\/media.api-football.com\/teams\/49.png"
+				},
+				"goalsHomeTeam": 0,
+				"goalsAwayTeam": 6,
+				"score": {
+					"halftime": "0-1",
+					"fulltime": "0-6",
+					"extratime": null,
+					"penalty": null
+				}
+			}
+		]
+	}
+}

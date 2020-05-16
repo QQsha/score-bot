@@ -6,6 +6,8 @@ github.com/konsorten/go-windows-terminal-sequences
 github.com/lib/pq
 github.com/lib/pq/oid
 github.com/lib/pq/scram
+# github.com/rs/cors v1.7.0
+github.com/rs/cors
 # github.com/sirupsen/logrus v1.4.2
 github.com/sirupsen/logrus
 # golang.org/x/sys v0.0.0-20190422165155-953cdadca894
