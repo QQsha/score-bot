@@ -12,7 +12,7 @@ WORKDIR /root/data/react-api/
 RUN npm install
 RUN npm run build 
 
-# EXPOSE 5432 80
+EXPOSE 5432 80
 # run main.go
 WORKDIR /root/data/
 CMD ["go","run","-mod=vendor","main.go"]

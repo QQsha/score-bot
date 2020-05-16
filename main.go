@@ -71,12 +71,12 @@ func main() {
 	r := mux.NewRouter()
 	fs := http.FileServer(http.Dir("./react-api/build/static"))
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
-	r.HandleFunc("/", fixtureBot.Status)
+	r.HandleFunc("/stats", fixtureBot.Status)
 	r.HandleFunc("/create_table", fixtureBot.CreateTable)
 	r.HandleFunc("/get_spam", antiSpamBot.GetSpamWordsHandler)
 	r.HandleFunc("/add_new_spam", antiSpamBot.AddNewSpamWordHandler)
 	r.HandleFunc("/delete_spam", antiSpamBot.DeleteSpamWordHandler)
-	r.HandleFunc("/spam", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./react-api/build/index.html")
 	})
 	handler := cors.Default().Handler(r)
