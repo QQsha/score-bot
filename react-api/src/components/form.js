@@ -26,7 +26,7 @@ class MyForm extends React.Component {
           <input id="spam" name="spam" type="text" class="form-control" />
           </div>
           <div class="col">
-          <label htmlFor="ban">Enter ban duration</label>
+          <label htmlFor="ban">Enter ban duration (in Hours)</label>
           <input id="ban" name="ban" type="text" class="form-control" />
           </div>
 

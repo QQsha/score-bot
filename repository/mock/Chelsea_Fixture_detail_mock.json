@@ -23,7 +23,7 @@
           "referee": "L. Mason",
           "homeTeam": {
             "team_id": 46,
-            "team_name": "Leicester",
+            "team_name": "Manchester City",
             "logo": "https:\/\/media.api-sports.io\/football\/teams\/46.png"
           },
           "awayTeam": {
@@ -208,20 +208,7 @@
               "type": "Card",
               "detail": "Yellow Card",
               "comments": "Roughing"
-            },
-            {
-                "elapsed": 56,
-                "elapsed_plus": null,
-                "team_id": 49,
-                "teamName": "Chelsea",
-                "player_id": 2289,
-                "player": "Jorginho",
-                "assist_id": null,
-                "assist": null,
-                "type": "Card",
-                "detail": "Yellow Card",
-                "comments": "Tripping"
-              }
+            }
           ],
           "lineups": {
             "Leicester": {

@@ -4,9 +4,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/QQsha/score-bot/repository"
-	mock "github.com/QQsha/score-bot/repository/mock"
 	"github.com/QQsha/score-bot/usecase"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
@@ -14,55 +14,43 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	// host   = "0.0.0.0"
-	// port   = 5432
-	user   = "postgres"
-	dbname = "qqsha"
-)
-
 func main() {
 	postgresConn := os.Getenv("POSTGRES_SCOREBOT")
-	// portDB := os.Getenv("DB_PORT")
-	// if portDB == "" {
-	// 	portDB = "5432"
-	// }
 
-	// host := os.Getenv("DB_HOST")
-	// if host == "" {
-	// 	host = "0.0.0.0"
-	// }
-	// postgresConn := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable",
-	// 	host, portDB, user, dbname)
 	db, teardown, err := repository.Connect(postgresConn)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer teardown()
 	logrus.Info("Successfully connected!")
-	// chatID := "@Chelsea"
-	testChannelID := "@Chelseafuns"
+	channelID := "@Chelsea"
+	// testChannelID := "@Chelseafuns"
 	fixtureBotToken := os.Getenv("SCORE_BOT")
-	testGroupID := "Группа а не канал"
-	antiSpamBotToken := "1238653037:AAE5szQlripWfNcHPVnBF2UasrDlZ-KS_nk"
-	antiSpamBotRepo := repository.NewBotRepository(antiSpamBotToken, testGroupID)
-	fixtureBotRepo := repository.NewBotRepository(fixtureBotToken, testChannelID)
+
+	chatID := strconv.Itoa(-1001490460294) //"Chelsea chat"
+	// chatID := strconv.Itoa(-1001276457176) //"Группа а не канал"
+	antiSpamBotToken := os.Getenv("ANTISPAM_BOT")
+	antiSpamBotRepo := repository.NewBotRepository(antiSpamBotToken, chatID)
+	fixtureBotRepo := repository.NewBotRepository(fixtureBotToken, channelID)
 	fixtureRepo := repository.NewFixtureRepository(db)
-	// apiToken := "9128771ca86462be53b41393a002341e"
-	// apiRepo := repository.NewAPIRepository(apiToken)
-	apiRepo := mock.NewAPIRepositoryMock()
-	fixtureBot := usecase.NewFixtureUseCase(*fixtureRepo, *fixtureBotRepo, *apiRepo)
-	antiSpamBot := usecase.NewFixtureUseCase(*fixtureRepo, *antiSpamBotRepo, *apiRepo)
-	// go func() {
-	// 	for {
-	// 		fixtureBot.LineupPoster()
-	// 	}
-	// }()
-	// go func() {
-	// 	for {
-	// 		fixtureBot.EventPoster()
-	// 	}
-	// }()
+	detectLangApi := repository.NewLanguageAPI()
+	apiToken := os.Getenv("APIFOOTBALL_TOKEN")
+	apiRepo := repository.NewAPIRepository(apiToken)
+	// apiRepoMOCK := mock.NewAPIRepositoryMock()
+
+	fixtureBot := usecase.NewFixtureUseCase(*fixtureRepo, *fixtureBotRepo, *apiRepo, *detectLangApi)
+	antiSpamBot := usecase.NewFixtureUseCase(*fixtureRepo, *antiSpamBotRepo, *apiRepo, *detectLangApi)
+
+	go func() {
+		for {
+			fixtureBot.LineupPoster()
+		}
+	}()
+	go func() {
+		for {
+			fixtureBot.EventPoster()
+		}
+	}()
 	go func() {
 		for {
 			antiSpamBot.MessageChecker()
@@ -73,9 +61,14 @@ func main() {
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
 	r.HandleFunc("/stats", fixtureBot.Status)
 	r.HandleFunc("/create_table", fixtureBot.CreateTable)
+	r.HandleFunc("/create_leagues", fixtureBot.CreateLeagues)
 	r.HandleFunc("/get_spam", antiSpamBot.GetSpamWordsHandler)
 	r.HandleFunc("/add_new_spam", antiSpamBot.AddNewSpamWordHandler)
 	r.HandleFunc("/delete_spam", antiSpamBot.DeleteSpamWordHandler)
+	r.HandleFunc("/masha", antiSpamBot.MashaAanswer)
+	r.HandleFunc("/zero_event", fixtureBot.ZeroEventer)
+	r.HandleFunc("/test", fixtureBot.TestPost)
+
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./react-api/build/index.html")
 	})

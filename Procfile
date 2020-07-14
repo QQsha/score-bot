@@ -1,1 +1,1 @@
-worker: go run -mod=vendor main.go
+web: go run -mod=vendor main.go

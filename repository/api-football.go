@@ -19,6 +19,7 @@ type APIRepositoryInterface interface {
 	GetLineup(fixtureID int) models.Lineup
 	StatusCheck() Status
 	GetFixtureDetails(fixtureID int) models.FixtureDetails
+	GetLeagues() models.Leagues
 }
 type Status struct {
 	API struct {
@@ -52,7 +53,36 @@ const (
 	statusURI   = "http://v2.api-football.com/status"
 	eventsURI   = "http://v2.api-football.com/events/"
 	fixtureURI  = "http://v2.api-football.com/fixtures/id/"
+	leaguesURI  = "http://v2.api-football.com/leagues"
 )
+
+func (api APIRepository) GetLeagues() models.Leagues {
+	client := http.Client{}
+
+	request, err := http.NewRequest("GET", leaguesURI, nil)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	headers := http.Header{
+		keyHeader: []string{api.token},
+	}
+	request.Header = headers
+	resp, err := client.Do(request)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	leagues := models.Leagues{}
+	err = json.Unmarshal(body, &leagues)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return leagues
+}
 
 func (api APIRepository) GetFixtures() models.Fixtures {
 	client := http.Client{}

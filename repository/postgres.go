@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/QQsha/score-bot/models"
 )
 
@@ -44,14 +45,35 @@ func (r FixtureRepository) SaveFixtures(fixtures models.Fixtures) {
 	}
 }
 
-func (r FixtureRepository) NearestFixture() models.Fixture {
+func (r FixtureRepository) NearestFixture(notPosted bool) models.Fixture {
 	var fixture models.Fixture
 	timeNow := time.Now()
-	err := r.db.QueryRow(
-		"SELECT id, date, home_team, away_team FROM public.fixtures WHERE date > $1 and posted = $2 ORDER BY date ASC", timeNow, false).Scan(
-		&fixture.FixtureID, &fixture.EventDate, &fixture.HomeTeam.TeamName, &fixture.AwayTeam.TeamName)
+	psql := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+	qr := psql.Select("fixtures.id, fixtures.date, fixtures.home_team, fixtures.away_team, leagues.name").
+		From("fixtures").
+		Join("leagues ON leagues.id = fixtures.league_id").
+		OrderBy("fixtures.date ASC").
+		Limit(1).
+		Where(sq.Gt{"fixtures.date": timeNow})
+	if notPosted {
+		qr = qr.Where(sq.Eq{"fixtures.posted": false})
+	}
+	query, args, err := qr.ToSql()
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+	}
+	err = r.db.QueryRow(query, args...).
+		Scan(
+			&fixture.FixtureID,
+			&fixture.EventDate,
+			&fixture.HomeTeam.TeamName,
+			&fixture.AwayTeam.TeamName,
+			&fixture.LeagueName)
+	// err := r.db.QueryRow(
+	// 	"SELECT fixtures.id, fixtures.date, fixtures.home_team, fixtures.away_team, leagues.name FROM public.fixtures JOIN leagues ON (leagues.id = fixtures.league_id) WHERE fixtures.date > $1 and fixtures.posted = $2 ORDER BY fixtures.date ASC", timeNow, false).Scan(
+	// 	&fixture.FixtureID, &fixture.EventDate, &fixture.HomeTeam.TeamName, &fixture.AwayTeam.TeamName, &fixture.LeagueName)
+	if err != nil {
+		fmt.Println(err)
 	}
 	fixture.TimeTo = fixture.EventDate.Sub(timeNow)
 	if fixture.HomeTeam.TeamName == "Chelsea" {
@@ -98,10 +120,33 @@ func (r FixtureRepository) CreateTableLastUpdate() {
 		panic(err)
 	}
 }
+func (r FixtureRepository) CreateTableLeagues() {
+	query := `
+		CREATE TABLE leagues(
+			id INTEGER PRIMARY KEY,
+			name VARCHAR (250)
+		 );`
+	_, err := r.db.Exec(query)
+	if err != nil {
+		panic(err)
+	}
+}
 
 func (r FixtureRepository) CreateTableSpamBase() {
 	query := `
 		CREATE TABLE spam_words(
+			word VARCHAR (250) PRIMARY KEY,
+			ban_duration INTEGER
+		 );`
+	_, err := r.db.Exec(query)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (r FixtureRepository) CreateTableEvents() {
+	query := `
+		CREATE TABLE events(
 			word VARCHAR (250) PRIMARY KEY,
 			ban_duration INTEGER
 		 );`
@@ -120,6 +165,20 @@ func (r FixtureRepository) AddSpamWord(word string, banDuration int) {
 	_, err := r.db.Exec(query, word, banDuration)
 	if err != nil {
 		panic(err)
+	}
+}
+
+func (r FixtureRepository) AddLeague(leagues models.Leagues) {
+	for _, league := range leagues.API.Leagues {
+		query := `
+		INSERT INTO leagues (id, name)
+		VALUES ($1, $2)
+		ON CONFLICT (id)
+		DO NOTHING`
+		_, err := r.db.Exec(query, league.ID, league.Name)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -200,11 +259,15 @@ func (r FixtureRepository) EventCounter(fixureID int) int {
 	}
 	return eventCount
 }
+
 func (r FixtureRepository) EventIncrementer(fixureID int) {
-	err := r.db.QueryRow(
-		"UPDATE fixtures SET events = events + 1 WHERE id = $1;", fixureID)
-	if err != nil {
-		// fmt.Println(err)
-	}
-	return
+	r.db.QueryRow("UPDATE fixtures SET events = events + 1 WHERE id = $1;", fixureID)
+}
+
+func (r FixtureRepository) EventDecrementer(fixureID int) {
+	r.db.QueryRow("UPDATE fixtures SET events = events - 1 WHERE id = $1;", fixureID)
+}
+
+func (r FixtureRepository) ZeroEventer(fixureID int) {
+	r.db.QueryRow("UPDATE fixtures SET events = 0 WHERE id = $1;", fixureID)
 }

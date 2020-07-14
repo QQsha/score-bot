@@ -14,23 +14,52 @@ import (
 )
 
 type BotRepository struct {
-	botToken string
-	chatID   string
+	botToken  string
+	channelID string
 }
 
-func NewBotRepository(botToken, chatID string) *BotRepository {
+func NewBotRepository(botToken, channelID string) *BotRepository {
 	return &BotRepository{
-		botToken: botToken,
-		chatID:   chatID,
+		botToken:  botToken,
+		channelID: channelID,
 	}
 }
 func (r BotRepository) GetChatID() string {
-	return r.chatID
+	return r.channelID
 }
-func (r BotRepository) SendPost(text string) {
+
+func (r BotRepository) SendPost(text string, replyMessageID *int) {
 	uri := fmt.Sprintf(
-		"https://api.telegram.org/bot%s/sendMessage?chat_id=%s&text=%s&parse_mode=Markdown",
-		r.botToken, r.chatID, url.QueryEscape(text))
+		"https://api.telegram.org/bot%s/sendMessage?chat_id=%s&text=%s&parse_mode=Markdown&disable_notification=True",
+		r.botToken, r.channelID, url.QueryEscape(text))
+	if replyMessageID != nil {
+		uri += "&reply_to_message_id=" + strconv.Itoa(*replyMessageID)
+	}
+	resp, err := http.Get(uri)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln(err, string(body))
+	}
+}
+
+type MVP struct {
+	Playeres []string `json:"options"`
+}
+
+func (r BotRepository) SendPoll(text string, options []string) {
+	fmt.Println(len(options))
+	mvp := MVP{}
+	mvp.Playeres = options
+	jsON, err := json.Marshal(mvp.Playeres)
+	if err != nil {
+		fmt.Println(err)
+	}
+	uri := fmt.Sprintf(
+		"https://api.telegram.org/bot%s/sendPoll?chat_id=%s&question=%s&options=%s&disable_notification=True",
+		r.botToken, r.channelID, url.QueryEscape(text),url.QueryEscape(string(jsON)) )
 	resp, err := http.Get(uri)
 	if err != nil {
 		log.Fatalln(err)
@@ -62,10 +91,26 @@ func (r BotRepository) GetUpdates(updateID int) models.Updates {
 }
 
 func (r BotRepository) RestrictUser(userID, banDuration int) {
-	banUntil := time.Now().Add(time.Second * time.Duration(banDuration)).Unix()
+	banUntil := time.Now().Add(time.Second * time.Duration(banDuration*3600)).Unix()
 	uri := fmt.Sprintf(
 		"https://api.telegram.org/bot%s/restrictChatMember?chat_id=%s&user_id=%s&until_date=%s&permissions:{can_send_messages:false}",
-		r.botToken, strconv.Itoa(-1001276457176), strconv.Itoa(userID), strconv.Itoa(int(banUntil)))
+		r.botToken, r.channelID, strconv.Itoa(userID), strconv.Itoa(int(banUntil)))
+	resp, err := http.Get(uri)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(body))
+	if err != nil {
+		log.Fatalln(err, string(body))
+	}
+}
+
+func (r BotRepository) DeleteMessage(messageID int) {
+
+	uri := fmt.Sprintf(
+		"https://api.telegram.org/bot%s/deleteMessage?chat_id=%s&message_id=%s",
+		r.botToken, r.channelID, strconv.Itoa(messageID))
 	resp, err := http.Get(uri)
 	if err != nil {
 		log.Fatalln(err)

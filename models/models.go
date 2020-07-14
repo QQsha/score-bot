@@ -9,9 +9,20 @@ type Fixtures struct {
 		Fixtures []Fixture `json:"fixtures"`
 	} `json:"api"`
 }
+type Leagues struct {
+	API struct {
+		Results int      `json:"results"`
+		Leagues []League `json:"leagues"`
+	} `json:"api"`
+}
+type League struct {
+	ID   int    `json:"league_id"`
+	Name string `json:"name"`
+}
 type Fixture struct {
-	FixtureID       int         `json:"fixture_id"`
-	LeagueID        int         `json:"league_id"`
+	FixtureID       int `json:"fixture_id"`
+	LeagueID        int `json:"league_id"`
+	LeagueName      string
 	EventDate       time.Time   `json:"event_date"`
 	EventTimestamp  int         `json:"event_timestamp"`
 	FirstHalfStart  interface{} `json:"firstHalfStart"`
@@ -223,15 +234,16 @@ type FixtureDetails struct {
 				} `json:"Passes %"`
 			} `json:"statistics"`
 			Players []struct {
-				EventID       int         `json:"event_id"`
-				UpdateAt      int         `json:"updateAt"`
-				PlayerID      int         `json:"player_id"`
-				PlayerName    string      `json:"player_name"`
-				TeamID        int         `json:"team_id"`
-				TeamName      string      `json:"team_name"`
-				Number        int         `json:"number"`
-				Position      string      `json:"position"`
-				Rating        string      `json:"rating"`
+				EventID       int    `json:"event_id"`
+				UpdateAt      int    `json:"updateAt"`
+				PlayerID      int    `json:"player_id"`
+				PlayerName    string `json:"player_name"`
+				TeamID        int    `json:"team_id"`
+				TeamName      string `json:"team_name"`
+				Number        int    `json:"number"`
+				Position      string `json:"position"`
+				Rating        string `json:"rating"`
+				FloatRaiting  float64
 				MinutesPlayed int         `json:"minutes_played"`
 				Captain       string      `json:"captain"`
 				Substitute    string      `json:"substitute"`
@@ -319,6 +331,21 @@ type Message struct {
 			Type                        string `json:"type"`
 			AllMembersAreAdministrators bool   `json:"all_members_are_administrators"`
 		} `json:"chat"`
+		ForwardFrom struct {
+			ID       int    `json:"id"`
+			Type     string `json:"type"`
+			Username string `json:"username"`
+		} `json:"forward_from,omitempty"`
+		ForwardFromChat struct {
+			ID       int    `json:"id"`
+			Type     string `json:"type"`
+			Username string `json:"username"`
+		} `json:"forward_from_chat,omitempty"`
+		ForwardDate     int    `json:"forward_date,omitempty"`
+		Caption         string `json:"caption,omitempty"`
+		CaptionEntities []struct {
+			Type string `json:"type"`
+		} `json:"caption_entities,omitempty"`
 		Date int    `json:"date"`
 		Text string `json:"text"`
 	} `json:"message"`

@@ -10,7 +10,10 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceRoot}/main.go",
-            "env": {},
+            "env": {
+                "ANTISPAM_BOT":"1238653037:AAHoU45ikW62kQj8QETvNtN4VwenFjIyzUQ",
+                "APIFOOTBALL_TOKEN":"9128771ca86462be53b41393a002341e"
+            },
             "args": []
         }
     ]
