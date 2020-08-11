@@ -3,7 +3,7 @@
       "results": 1,
       "fixtures": [
         {
-          "fixture_id": 157258,
+          "fixture_id": 571948,
           "league_id": 524,
           "league": {
             "name": "Premier League",
@@ -31,8 +31,8 @@
             "team_name": "Chelsea",
             "logo": "https:\/\/media.api-sports.io\/football\/teams\/49.png"
           },
-          "goalsHomeTeam": 2,
-          "goalsAwayTeam": 2,
+          "goalsHomeTeam": 4,
+          "goalsAwayTeam": 3,
           "score": {
             "halftime": "0-0",
             "fulltime": "2-2",

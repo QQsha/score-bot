@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"strconv"
+	"time"
+)
 
 // https://server2.api-football.com/fixtures/team/49
 type Fixtures struct {
@@ -295,6 +298,14 @@ type FixtureDetails struct {
 		} `json:"fixtures"`
 	} `json:"api"`
 }
+
+func (fixture FixtureDetails) FixtureScore() string {
+	if len(fixture.API.Fixtures) == 0 {
+		return ""
+	}
+	return fixture.API.Fixtures[0].HomeTeam.TeamName + " " + strconv.Itoa(fixture.API.Fixtures[0].GoalsHomeTeam) + " - " + strconv.Itoa(fixture.API.Fixtures[0].GoalsAwayTeam) + " " + fixture.API.Fixtures[0].AwayTeam.TeamName
+}
+
 type Event struct {
 	Elapsed     int    `json:"elapsed"`
 	ElapsedPlus int    `json:"elapsed_plus"`
@@ -310,11 +321,11 @@ type Event struct {
 }
 
 type Updates struct {
-	Ok       bool      `json:"ok"`
-	Messages []Message `json:"result"`
+	Ok       bool          `json:"ok"`
+	Messages []FullMessage `json:"result"`
 }
 
-type Message struct {
+type FullMessage struct {
 	UpdateID int `json:"update_id"`
 	Message  struct {
 		MessageID int `json:"message_id"`
@@ -341,17 +352,36 @@ type Message struct {
 			Type     string `json:"type"`
 			Username string `json:"username"`
 		} `json:"forward_from_chat,omitempty"`
-		ForwardDate     int    `json:"forward_date,omitempty"`
-		Caption         string `json:"caption,omitempty"`
-		CaptionEntities []struct {
-			Type string `json:"type"`
-		} `json:"caption_entities,omitempty"`
-		Date int    `json:"date"`
-		Text string `json:"text"`
+		ForwardDate     int        `json:"forward_date,omitempty"`
+		Caption         string     `json:"caption,omitempty"`
+		CaptionEntities []Entities `json:"caption_entities,omitempty"`
+		Date            int        `json:"date"`
+		Text            string     `json:"text"`
 	} `json:"message"`
 }
 
+type Entities struct {
+	Type string `json:"type"`
+}
 type Spam struct {
 	Word        string `json:"word"`
 	BanDuration int    `json:"ban"`
+}
+
+type ChatUser struct {
+	Ok     bool   `json:"ok"`
+	Result Result `json:"result"`
+}
+type User struct {
+	ID        int      `json:"id"`
+	IsBot     bool     `json:"is_bot"`
+	FirstName string   `json:"first_name"`
+	LastName  string   `json:"last_name"`
+	Username  string   `json:"username"`
+	Wins      int      `json:"-"`
+	Fixtures  []string `json:"-"`
+}
+type Result struct {
+	User   User   `json:"user"`
+	Status string `json:"status"`
 }

@@ -19,20 +19,17 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	timeFormat = "15:04"
-)
-
 type FixtureUseCase struct {
-	fixtureRepo repository.FixtureRepository
-	botRepo     repository.BotRepository
+	fixtureRepo repository.FixtureRepositoryInterface
+	botRepo     repository.BotRepositoryInterface
 	fixtureAPI  repository.APIRepositoryInterface
 	langAPI     repository.DetectLanguageAPI
+	log         *logrus.Logger
 }
 
 func NewFixtureUseCase(
-	fixtureRepo repository.FixtureRepository,
-	botRepo repository.BotRepository,
+	fixtureRepo repository.FixtureRepositoryInterface,
+	botRepo repository.BotRepositoryInterface,
 	fixtureAPI repository.APIRepositoryInterface,
 	langAPI repository.DetectLanguageAPI,
 ) *FixtureUseCase {
@@ -41,27 +38,55 @@ func NewFixtureUseCase(
 		botRepo:     botRepo,
 		fixtureAPI:  fixtureAPI,
 		langAPI:     langAPI,
+		log:         logrus.New(),
 	}
 }
 
 func (u FixtureUseCase) GetFixtures() {
 	fixtures := u.fixtureAPI.GetFixtures()
-	u.fixtureRepo.SaveFixtures(fixtures)
+	err := u.fixtureRepo.SaveFixtures(fixtures)
+	if err != nil {
+		u.log.Error(err)
+	}
 }
 func (u FixtureUseCase) ZeroEventer(w http.ResponseWriter, r *http.Request) {
-	fixture := u.fixtureRepo.NearestFixture(true)
+	fixture, err := u.fixtureRepo.NearestFixture(true)
+	if err != nil {
+		u.log.Error(err)
+		return
+	}
 	u.fixtureRepo.ZeroEventer(fixture.FixtureID)
 }
-func (u FixtureUseCase) TestPost(w http.ResponseWriter, r *http.Request) {
-	fixture := u.fixtureAPI.GetFixtureDetails(333)
-	textMVP, playersMVP := posts.CreateMVPPost(fixture)
-	u.botRepo.SendPoll(textMVP, playersMVP)
-	// text := posts.CreateStatsPost(fixture)
-	// u.botRepo.SendPost(text, nil)
+func (u FixtureUseCase) DateFix(w http.ResponseWriter, r *http.Request) {
+	fixture := 571948
+	u.fixtureRepo.DateFix(fixture)
 }
-func (u FixtureUseCase) GetLineup(fixtureID int) models.Lineup {
+func (u FixtureUseCase) TestPost(w http.ResponseWriter, r *http.Request) {
+	fixture := u.fixtureAPI.GetFixtureDetails(571948)
+	textMVP := u.GetWinners(fixture)
+	// text := posts.CreateStatsPost(fixture)
+	err := u.botRepo.SendPost(textMVP, nil)
+	if err != nil {
+		u.log.Error(err)
+	}
+}
+
+func (u FixtureUseCase) GetLeaderboard() {
+	winners, err := u.fixtureRepo.GetLeaderboard()
+	if err != nil {
+		u.log.Error(err)
+		return
+	}
+	post := posts.CreateLeaderboardPost(winners)
+	err = u.botRepo.SendPost(post, nil)
+	if err != nil {
+		u.log.Error(err)
+	}
+}
+
+func (u FixtureUseCase) GetLineup(fixtureID, interval int) models.Lineup {
 	lineup := models.Lineup{}
-	ticker := time.NewTicker(40 * time.Second)
+	ticker := time.NewTicker(time.Duration(interval) * time.Second)
 	stop := make(chan bool)
 	go func() {
 		for {
@@ -84,8 +109,16 @@ func (u FixtureUseCase) NewEventChecker(fixtureID int) {
 		for {
 			<-ticker.C
 			fixtureDetail = u.fixtureAPI.GetFixtureDetails(fixtureID)
-			if len(fixtureDetail.API.Fixtures) > 0 && len(fixtureDetail.API.Fixtures[0].Events) > 0 {
-				eventCount := u.fixtureRepo.EventCounter(fixtureID)
+			if len(fixtureDetail.API.Fixtures) == 0 {
+				u.log.Errorf("fixture details is missing")
+				return
+			}
+			if len(fixtureDetail.API.Fixtures[0].Events) > 0 {
+				eventCount, err := u.fixtureRepo.EventCounter(fixtureID)
+				if err != nil {
+					u.log.Error(err)
+					return
+				}
 				if len(fixtureDetail.API.Fixtures[0].Events) > eventCount {
 					newEvents := fixtureDetail.API.Fixtures[0].Events[eventCount:]
 					for _, event := range newEvents {
@@ -94,7 +127,10 @@ func (u FixtureUseCase) NewEventChecker(fixtureID int) {
 							continue
 						}
 						text := posts.CreatePostEvent(fixtureDetail, event)
-						u.botRepo.SendPost(text, nil)
+						err := u.botRepo.SendPost(text, nil)
+						if err != nil {
+							u.log.Error(err)
+						}
 						u.fixtureRepo.EventIncrementer(fixtureID)
 					}
 				}
@@ -112,11 +148,21 @@ func (u FixtureUseCase) NewEventChecker(fixtureID int) {
 	}()
 	<-stop
 	text := posts.CreateFullTimePost(fixtureDetail)
-	u.botRepo.SendPost(text, nil)
+	text += u.GetWinners(fixtureDetail)
+	err := u.botRepo.SendPost(text, nil)
+	if err != nil {
+		u.log.Error(err)
+	}
 	textStats := posts.CreateStatsPost(fixtureDetail)
-	u.botRepo.SendPost(textStats, nil)
+	err = u.botRepo.SendPost(textStats, nil)
+	if err != nil {
+		u.log.Error(err)
+	}
 	textMVP, playersMVP := posts.CreateMVPPost(fixtureDetail)
-	u.botRepo.SendPoll(textMVP, playersMVP)
+	err = u.botRepo.SendPoll(textMVP, playersMVP)
+	if err != nil {
+		u.log.Error(err)
+	}
 }
 
 func (u FixtureUseCase) GetRandomPrase(prases []string) string {
@@ -124,26 +170,68 @@ func (u FixtureUseCase) GetRandomPrase(prases []string) string {
 	return post
 }
 
+func (u FixtureUseCase) GetWinners(fixtureDetail models.FixtureDetails) string {
+	ids, err := u.fixtureRepo.GetWinnersID(fixtureDetail)
+	if err != nil {
+		u.log.Error(err)
+		return ""
+	}
+	winners := make([]models.User, 0)
+	for _, id := range ids {
+		winner, err := u.botRepo.GetChatUser(id)
+		if err != nil {
+			u.log.Error(err)
+			return ""
+		}
+		err = u.fixtureRepo.AddLeader(winner, fixtureDetail.FixtureScore())
+		if err != nil {
+			u.log.Error(err)
+			return ""
+		}
+		winners = append(winners, winner)
+	}
+	textWinners := posts.CreateWinnersPost(winners)
+	return textWinners
+}
+
 func (u FixtureUseCase) LineupPoster() {
 	u.GetFixtures()
-	fixture := u.fixtureRepo.NearestFixture(true)
-	sleepTime := fixture.TimeTo - (55 * time.Minute)
+	fixture, err := u.fixtureRepo.NearestFixture(true)
+	if err != nil {
+		u.log.Error(err)
+		time.Sleep(30 * time.Minute)
+		return
+	}
+	sleepTime := fixture.TimeTo - (53 * time.Minute)
 	// sleepTime := time.Second * 3
 	logrus.Info(fixture.HomeTeam.TeamName, " vs team: ", fixture.AwayTeam.TeamName, " id: ", fixture.FixtureID)
 	logrus.Info("will send post after ", sleepTime)
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	time.AfterFunc(sleepTime, func() {
-		lineup := u.GetLineup(fixture.FixtureID)
+		lineup := u.GetLineup(fixture.FixtureID, 55)
 		text := posts.CreatePostLineup(fixture, lineup)
-		u.botRepo.SendPost(text, nil)
-		u.fixtureRepo.FixturePosted(fixture.FixtureID)
+		err := u.botRepo.SendPost(text, nil)
+		if err != nil {
+			u.log.Error(err)
+		}
+		err = u.fixtureRepo.FixturePosted(fixture.FixtureID)
+		if err != nil {
+			u.log.Error(err)
+			wg.Done()
+			return
+		}
 		wg.Done()
 	})
 	wg.Wait()
 }
 func (u FixtureUseCase) EventPoster() {
-	fixture := u.fixtureRepo.NearestFixture(false)
+	fixture, err := u.fixtureRepo.NearestFixture(false)
+	if err != nil {
+		u.log.Error(err)
+		time.Sleep(30 * time.Minute)
+		return
+	}
 	sleepTime := fixture.TimeTo + (5 * time.Minute)
 	// sleepTime := time.Second * 2
 	wg := &sync.WaitGroup{}
@@ -160,7 +248,11 @@ func (u FixtureUseCase) Status(w http.ResponseWriter, r *http.Request) {
 	status := u.fixtureAPI.StatusCheck()
 	reqLeft := strconv.Itoa(status.API.Status.RequestsLeft)
 
-	fixture := u.fixtureRepo.NearestFixture(false)
+	fixture, err := u.fixtureRepo.NearestFixture(false)
+	if err != nil {
+		u.log.Error(err)
+		return
+	}
 	io.WriteString(w, "Next match: "+fixture.HomeTeam.TeamName+" vs "+fixture.AwayTeam.TeamName+"\n")
 	timeLeft := (fixture.TimeTo - (time.Minute * 55)).String()
 	io.WriteString(w, "Post will be in: "+timeLeft+"\n")
@@ -174,27 +266,45 @@ func (u FixtureUseCase) CreateTable(w http.ResponseWriter, r *http.Request) {
 	// u.fixtureRepo.CreateTableSpamBase()
 	// u.fixtureRepo.CreateTableLastUpdate()
 	// u.fixtureRepo.CreateTableFixtures()
-	u.fixtureRepo.CreateTableLeagues()
+	//u.fixtureRepo.CreateTableLeagues()
+
+	// u.fixtureRepo.CreateTableFixtures()
+	// u.fixtureRepo.CreateTableLeaderboard()
 
 }
 func (u FixtureUseCase) CreateLeagues(w http.ResponseWriter, r *http.Request) {
 	leagues := u.fixtureAPI.GetLeagues()
-	u.fixtureRepo.AddLeague(leagues)
+	err := u.fixtureRepo.AddLeague(leagues)
+	if err != nil {
+		u.log.Error(err)
+		return
+	}
 }
 
 func (u FixtureUseCase) MessageChecker() {
 	chatID := u.botRepo.GetChatID()
-	lastUpdateID := u.fixtureRepo.GetLastUpdate(chatID)
-
+	lastUpdateID, err := u.fixtureRepo.GetLastUpdate(chatID)
+	if err != nil {
+		u.log.Error(err)
+		return
+	}
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	sleepTime := time.Second * 3
 	time.AfterFunc(sleepTime, func() {
 		fmt.Println("start checking new messages")
-		updates := u.botRepo.GetUpdates(lastUpdateID)
+		updates, err := u.botRepo.GetUpdates(lastUpdateID)
+		if err != nil {
+			u.log.Error(err)
+			return
+		}
 		fmt.Printf("%+v\n", updates.Messages)
 
-		spamWords := u.fixtureRepo.GetSpamWords()
+		spamWords, err := u.fixtureRepo.GetSpamWords()
+		if err != nil {
+			u.log.Error(err)
+			return
+		}
 		englishPhrases := posts.GetEnglishPhrases()
 		arsenalPhrases := posts.GetArsenalPhrases()
 
@@ -204,14 +314,18 @@ func (u FixtureUseCase) MessageChecker() {
 			u.MessageHandler(message, spamWords, englishPhrases, arsenalPhrases)
 		}
 		if lastUpdate != 0 {
-			u.fixtureRepo.MessageUpdates(chatID, lastUpdate)
+			err := u.fixtureRepo.MessageUpdates(chatID, lastUpdate)
+			if err != nil {
+				u.log.Error(err)
+				return
+			}
 		}
 		wg.Done()
 	})
 	wg.Wait()
 }
 
-func (u FixtureUseCase) MessageHandler(message models.Message, spamWords []models.Spam, englishPhrases, arsPhrases []string) {
+func (u FixtureUseCase) MessageHandler(message models.FullMessage, spamWords []models.Spam, englishPhrases, arsPhrases []string) {
 	if message.Message.Text == "" {
 		message.Message.Text = message.Message.Caption
 	}
@@ -219,26 +333,111 @@ func (u FixtureUseCase) MessageHandler(message models.Message, spamWords []model
 	switch message.Message.Text {
 	case "/rules@chelseaAntiSpamBot":
 		rules := posts.GetRulePost()
-		u.botRepo.SendPost(rules, nil)
+		err := u.botRepo.SendPost(rules, nil)
+		if err != nil {
+			u.log.Error(err)
+		}
 		return
 	case "/next@chelseaAntiSpamBot":
-		fixture := u.fixtureRepo.NearestFixture(false)
+		fixture, err := u.fixtureRepo.NearestFixture(false)
+		if err != nil {
+			u.log.Error(err)
+			return
+		}
 		post := posts.CreatePostNextGame(fixture)
-		u.botRepo.SendPost(post, nil)
+		err = u.botRepo.SendPost(post, nil)
+		if err != nil {
+			u.log.Error(err)
+		}
+		return
+	case "/leaderboard@chelseaAntiSpamBot":
+		u.GetLeaderboard()
+		return
+
+	case "/predict@chelseaAntiSpamBot":
+		err := u.botRepo.DeleteMessage(message.Message.MessageID)
+		if err != nil {
+			u.log.Error(err)
+		}
+		return
+	}
+	// predict check
+	if strings.Contains(strings.ToLower(message.Message.Text), "/predict") {
+		var homeTeamScore, awayTeamScore int
+		score := strings.Split(message.Message.Text, " ")
+		errorMsg := "wrong text format, use 3-1, where 3 is home team, and 1 is away team"
+		if len(score) != 2 {
+			err := u.botRepo.SendPost(errorMsg, &message.Message.MessageID)
+			if err != nil {
+				u.log.Error(err)
+			}
+			return
+		}
+		results := strings.Split(score[1], "-")
+		if len(results) != 2 {
+			err := u.botRepo.SendPost(errorMsg, &message.Message.MessageID)
+			if err != nil {
+				u.log.Error(err)
+			}
+			return
+		}
+		homeTeamScore, err := strconv.Atoi(results[0])
+		if err != nil {
+			err := u.botRepo.SendPost(errorMsg, &message.Message.MessageID)
+			if err != nil {
+				u.log.Error(err)
+			}
+			return
+		}
+		awayTeamScore, err = strconv.Atoi(results[1])
+		if err != nil {
+			err := u.botRepo.SendPost(errorMsg, &message.Message.MessageID)
+			if err != nil {
+				u.log.Error(err)
+			}
+			return
+		}
+
+		fixture, err := u.fixtureRepo.NearestFixture(false)
+		if err != nil {
+			u.log.Error(err)
+			return
+		}
+		err = u.fixtureRepo.AddPrediction(fixture.FixtureID, message.Message.From.ID, homeTeamScore, awayTeamScore)
+		if err != nil {
+			u.log.Error(err)
+			return
+		}
+		err = u.botRepo.SendPost("your predict, "+fixture.HomeTeam.TeamName+" "+strconv.Itoa(homeTeamScore)+" - "+strconv.Itoa(awayTeamScore)+" "+fixture.AwayTeam.TeamName+" is accepted!", &message.Message.MessageID)
+		if err != nil {
+			u.log.Error(err)
+		}
 		return
 	}
 	// spam check
-	isSpam, banDuration := IsSpam(message, spamWords)
+	isSpam, banDuration := u.IsSpam(message, spamWords)
 	if isSpam {
-		u.botRepo.RestrictUser(message.Message.From.ID, banDuration)
-		u.botRepo.DeleteMessage(message.Message.MessageID)
-		fmt.Println("SPAM")
+		err := u.botRepo.RestrictUser(message.Message.From.ID, banDuration)
+		if err != nil {
+			u.log.Error(err)
+		}
+		err = u.botRepo.DeleteMessage(message.Message.MessageID)
+		if err != nil {
+			u.log.Error(err)
+		}
 		return
 	}
 	// arsenal check
 	if strings.Contains(strings.ToLower(message.Message.Text), "arsenal") {
+		randNum := rand.Intn(3)
+		if randNum%3 != 0 {
+			return
+		}
 		text := u.GetRandomPrase(arsPhrases)
-		u.botRepo.SendPost(text, &message.Message.MessageID)
+		err := u.botRepo.SendPost(text, &message.Message.MessageID)
+		if err != nil {
+			u.log.Error(err)
+		}
 		return
 	}
 	// check msg on names
@@ -248,7 +447,10 @@ func (u FixtureUseCase) MessageHandler(message models.Message, spamWords []model
 		notEnglish, _ := u.langAPI.EnglisheDetector(message.Message.Text)
 		if notEnglish {
 			text := u.GetRandomPrase(englishPhrases)
-			u.botRepo.SendPost(text, &message.Message.MessageID)
+			err := u.botRepo.SendPost(text, &message.Message.MessageID)
+			if err != nil {
+				u.log.Error(err)
+			}
 		}
 	}
 	// tx := u.langAPI.EnglishDetectorTest(message.Message.Text)
@@ -256,8 +458,8 @@ func (u FixtureUseCase) MessageHandler(message models.Message, spamWords []model
 	// u.botRepo.SendPost(tx, &message.Message.MessageID)
 }
 
-func IsSpam(text models.Message, spamWords []models.Spam) (bool, int) {
-	if text.Message.ForwardFromChat.ID == -1001044276483 || text.Message.From.Username == "qqshaaa" {
+func (u FixtureUseCase) IsSpam(text models.FullMessage, spamWords []models.Spam) (bool, int) {
+	if text.Message.ForwardFromChat.ID == -1001044276483 || text.Message.From.Username == "qqshaa"|| text.Message.From.Username == "KingSuperFrank" {
 		return false, 0
 	}
 	for _, ent := range text.Message.CaptionEntities {
@@ -277,22 +479,34 @@ func IsSpam(text models.Message, spamWords []models.Spam) (bool, int) {
 }
 
 func (u FixtureUseCase) GetSpamWordsHandler(w http.ResponseWriter, r *http.Request) {
-	spamWords := u.fixtureRepo.GetSpamWords()
+	spamWords, err := u.fixtureRepo.GetSpamWords()
+	if err != nil {
+		u.log.Error(err)
+		return
+	}
 	res, _ := json.Marshal(spamWords)
 	w.Header().Add("Content-Type", "application/json")
 	io.WriteString(w, string(res))
 }
 
 func (u FixtureUseCase) AddNewSpamWordHandler(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(10)
+	err := r.ParseMultipartForm(10)
+	if err != nil {
+		u.log.Error(err)
+		return
+	}
 	ban := r.FormValue("ban")
 	spam := r.FormValue("spam")
 	banDur, err := strconv.Atoi(ban)
 	if err != nil {
-		fmt.Println(err)
+		u.log.Error(err)
+		return
 	}
-	u.fixtureRepo.AddSpamWord(spam, banDur)
-	// res, _ := json.Marshal(spamWords)
+	err = u.fixtureRepo.AddSpamWord(spam, banDur)
+	if err != nil {
+		u.log.Error(err)
+		return
+	}
 	w.Header().Add("Content-Type", "application/json")
 	io.WriteString(w, "")
 }
@@ -310,19 +524,14 @@ func (u FixtureUseCase) DeleteSpamWordHandler(w http.ResponseWriter, r *http.Req
 	spamWord := keys.Get("spam")
 
 	fmt.Println(spamWord)
-	u.fixtureRepo.DeleteSpamWord(spamWord)
+	err := u.fixtureRepo.DeleteSpamWord(spamWord)
+	if err != nil {
+		u.log.Error(err)
+		return
+	}
 	w.Header().Add("Content-Type", "application/json")
 	io.WriteString(w, "")
 }
 func (u FixtureUseCase) ServeIndex(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "./react-api/build/index.html")
-}
-func (u FixtureUseCase) MashaAanswer(w http.ResponseWriter, r *http.Request) {
-	text := `
-	спасиб0 биб буп 
-	`
-	ss := 83
-	u.botRepo.SendPost(text, &ss)
-	w.Header().Add("Content-Type", "application/json")
-	io.WriteString(w, "")
 }

@@ -61,6 +61,8 @@ func CreatePostNextGame(fixture models.Fixture) string {
 	timeTo := time.Until(fixture.EventDate)
 
 	text += "\n *Time left: " + fmtDuration(timeTo) + "*"
+
+	text += "\n\n You can predict score to this match with command / predict 3-1"
 	return text
 }
 
@@ -127,6 +129,34 @@ func CreateFullTimePost(fixture models.FixtureDetails) string {
 	post += GetCurrentScore(fixture) + "\n\n"
 	post += GetGoals(fixture) + "\n"
 	post += "KEEP THE BLUE FLAG FLYING HIGH!💙"
+	return post
+
+}
+
+func CreateWinnersPost(winners []models.User) string {
+	if len(winners) == 0 {
+		return ""
+	}
+	post := "\n\nConcragutlaitions to chat members, who predicted correct score: \n"
+	for _, winner := range winners {
+		//[Andrei Cucuschin](tg://user?id=46731206)
+		post += "[" + winner.FirstName + " " + winner.LastName + "](tg://user?id=" + strconv.Itoa(winner.ID) + ") \n"
+	}
+
+	return post
+}
+
+func CreateLeaderboardPost(winners []models.User) string {
+	if len(winners) == 0 {
+		return "*Prediction Leaderboard:* \n\n no win prediction yet"
+	}
+	post := "Prediction Leaderboard: \n\n"
+	for i, winner := range winners {
+		post += "*" + strconv.Itoa(i+1) + ".* [" + winner.FirstName + " " + winner.LastName + "](tg://user?id=" + strconv.Itoa(winner.ID) + ") \n"
+		for _, fixture := range winner.Fixtures {
+			post += fixture + "\n"
+		}
+	}
 	return post
 }
 
@@ -235,19 +265,17 @@ func GetEnglishPhrases() []string {
 
 func GetArsenalPhrases() []string {
 	phrases := []string{
-		"i hate it",
 		"Arsenal, what a losers",
 		"Arsenal is so bad, im right?",
 		"Arsanal",
 		"stupid Arsenal",
 		"wrost team in the word",
-		"4rsenal",
+		"ars8nal",
 		"The Best comedy team in EPL",
 		"beeaaahh",
 		"Arsneal in EPL, like Drinkwater in Chelsea.",
-		"2 + 2 = Arsenal",
+		"(2 + 2)*2 = Arsenal",
 		"If Drinkwater will come in Arsenal, they will get plus one star in Fifa",
-		"Arsenal in Champions League, like Eva Carneiro in Chelsea.",
 		"Good ebening",
 		"Jesus, please help Arsenal to take 3 points",
 		"Arsenal, they dont even can get 4th place",
@@ -255,6 +283,7 @@ func GetArsenalPhrases() []string {
 		"Arsenal, just lets they will be allowed to play in football with hands",
 		"Arsenal dont have money for transfers, because they paying all their money to EA Sports, to keep their team in Fifa20",
 		"82% of anual Arsenal's budget generates hotdog guys from Emirates",
+		"Arsenal Best player of the Year - Anthony Taylor",
 	}
 	return phrases
 }

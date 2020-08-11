@@ -11,7 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 	"github.com/rs/cors"
-	"github.com/sirupsen/logrus"
+	
 )
 
 func main() {
@@ -22,9 +22,8 @@ func main() {
 		log.Fatal(err)
 	}
 	defer teardown()
-	logrus.Info("Successfully connected!")
 	channelID := "@Chelsea"
-	// testChannelID := "@Chelseafuns"
+	// channelID := "@Chelseafuns"
 	fixtureBotToken := os.Getenv("SCORE_BOT")
 
 	chatID := strconv.Itoa(-1001490460294) //"Chelsea chat"
@@ -65,8 +64,8 @@ func main() {
 	r.HandleFunc("/get_spam", antiSpamBot.GetSpamWordsHandler)
 	r.HandleFunc("/add_new_spam", antiSpamBot.AddNewSpamWordHandler)
 	r.HandleFunc("/delete_spam", antiSpamBot.DeleteSpamWordHandler)
-	r.HandleFunc("/masha", antiSpamBot.MashaAanswer)
 	r.HandleFunc("/zero_event", fixtureBot.ZeroEventer)
+	r.HandleFunc("/date_fix", fixtureBot.DateFix)
 	r.HandleFunc("/test", fixtureBot.TestPost)
 
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

@@ -13,5 +13,6 @@ require (
 	github.com/rs/cors v1.7.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/goconvey v1.6.4 // indirect
+	github.com/valyala/fasthttp v1.15.1
 	golang.org/x/sys v0.0.0-20200610111108-226ff32320da // indirect
 )
