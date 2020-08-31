@@ -3,24 +3,25 @@ package mock
 import "github.com/QQsha/score-bot/models"
 
 type RepositoryMock struct {
-	NearestFixtureFunc   func(notPosted bool) (models.Fixture, error)
-	GetWinnersIDFunc     func(fixtureDetail models.FixtureDetails) ([]int, error)
-	SaveFixturesFunc     func(fixtures models.Fixtures) error
-	AddLeaderFunc        func(member models.User, fixtureResult string) error
-	GetLeaderboardFunc   func() ([]models.User, error)
-	AddPredictionFunc    func(fixtureID, user_id, home_predict, away_predict int) error
-	AddSpamWordFunc      func(word string, banDuration int) error
-	AddLeagueFunc        func(leagues models.Leagues) error
-	DeleteSpamWordFunc   func(word string) error
-	GetSpamWordsFunc     func() ([]models.Spam, error)
-	FixturePostedFunc    func(fixtureID int) error
-	MessageUpdatesFunc   func(chatID string, updateID int) error
-	DateFixFunc          func(fixureID int) error
-	ZeroEventerFunc      func(fixureID int) error
-	EventDecrementerFunc func(fixureID int) error
-	EventIncrementerFunc func(fixureID int) error
-	EventCounterFunc     func(fixureID int) (int, error)
-	GetLastUpdateFunc    func(chatID string) (int, error)
+	NearestFixtureFunc    func(notPosted bool) (models.Fixture, error)
+	GetWinnersIDFunc      func(fixtureDetail models.FixtureDetails) ([]int, error)
+	SaveFixturesFunc      func(fixtures models.Fixtures) error
+	AddLeaderFunc         func(member models.User, fixtureResult string) error
+	GetLeaderboardFunc    func() ([]models.User, error)
+	AddPredictionFunc     func(fixtureID, user_id, home_predict, away_predict int) error
+	AddSpamWordFunc       func(word string, banDuration int) error
+	AddLeagueFunc         func(leagues models.Leagues) error
+	DeleteSpamWordFunc    func(word string) error
+	GetSpamWordsFunc      func() ([]models.Spam, error)
+	FixturePostedFunc     func(fixtureID int) error
+	MessageUpdatesFunc    func(chatID string, updateID int) error
+	DateFixFunc           func(fixureID int) error
+	ZeroEventerFunc       func(fixureID int) error
+	EventDecrementerFunc  func(fixureID int) error
+	EventIncrementerFunc  func(fixureID int) error
+	EventCounterFunc      func(fixureID int) (int, error)
+	GetLastUpdateFunc     func(chatID string) (int, error)
+	PredictionCounterFunc func(fixureID int) (int, error)
 }
 
 func NewRepositoryMock() *RepositoryMock {
@@ -86,4 +87,7 @@ func (s RepositoryMock) EventCounter(fixureID int) (int, error) {
 }
 func (s RepositoryMock) GetLastUpdate(chatID string) (int, error) {
 	return s.GetLastUpdateFunc(chatID)
+}
+func (s RepositoryMock) PredictionCounter(fixureID int) (int, error) {
+	return s.PredictionCounterFunc(fixureID)
 }

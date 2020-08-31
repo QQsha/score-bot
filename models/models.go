@@ -357,6 +357,9 @@ type FullMessage struct {
 		CaptionEntities []Entities `json:"caption_entities,omitempty"`
 		Date            int        `json:"date"`
 		Text            string     `json:"text"`
+		Dice            struct {
+			Emoji string `json:"emoji"`
+		}
 	} `json:"message"`
 }
 

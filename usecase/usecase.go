@@ -397,7 +397,6 @@ func (u FixtureUseCase) MessageHandler(message models.FullMessage, spamWords []m
 			}
 			return
 		}
-
 		fixture, err := u.fixtureRepo.NearestFixture(false)
 		if err != nil {
 			u.log.Error(err)
@@ -408,7 +407,14 @@ func (u FixtureUseCase) MessageHandler(message models.FullMessage, spamWords []m
 			u.log.Error(err)
 			return
 		}
-		err = u.botRepo.SendPost("your predict, "+fixture.HomeTeam.TeamName+" "+strconv.Itoa(homeTeamScore)+" - "+strconv.Itoa(awayTeamScore)+" "+fixture.AwayTeam.TeamName+" is accepted!", &message.Message.MessageID)
+		count, err := u.fixtureRepo.PredictionCounter(fixture.FixtureID)
+		if err != nil {
+			u.log.Error(err)
+			return
+		}
+		postText := "Your predict, " + fixture.HomeTeam.TeamName + " " + strconv.Itoa(homeTeamScore) + " - " + strconv.Itoa(awayTeamScore) + " " + fixture.AwayTeam.TeamName + " is accepted!\n"
+		postText += "Total predictions on this match: " + strconv.Itoa(count)
+		err = u.botRepo.SendPost(postText, &message.Message.MessageID)
 		if err != nil {
 			u.log.Error(err)
 		}
@@ -426,6 +432,13 @@ func (u FixtureUseCase) MessageHandler(message models.FullMessage, spamWords []m
 			u.log.Error(err)
 		}
 		return
+	}
+	// emoji check
+	if u.IsEmoji(message) {
+		err := u.botRepo.DeleteMessage(message.Message.MessageID)
+		if err != nil {
+			u.log.Error(err)
+		}
 	}
 	// arsenal check
 	if strings.Contains(strings.ToLower(message.Message.Text), "arsenal") {
@@ -459,7 +472,7 @@ func (u FixtureUseCase) MessageHandler(message models.FullMessage, spamWords []m
 }
 
 func (u FixtureUseCase) IsSpam(text models.FullMessage, spamWords []models.Spam) (bool, int) {
-	if text.Message.ForwardFromChat.ID == -1001044276483 || text.Message.From.Username == "qqshaa"|| text.Message.From.Username == "KingSuperFrank" {
+	if text.Message.ForwardFromChat.ID == -1001044276483 || text.Message.From.Username == "qqshaa" || text.Message.From.Username == "KingSuperFrank" {
 		return false, 0
 	}
 	for _, ent := range text.Message.CaptionEntities {
@@ -476,6 +489,12 @@ func (u FixtureUseCase) IsSpam(text models.FullMessage, spamWords []models.Spam)
 		}
 	}
 	return false, 0
+}
+func (u FixtureUseCase) IsEmoji(text models.FullMessage) bool {
+	if text.Message.Dice.Emoji != "" {
+		return true
+	}
+	return false
 }
 
 func (u FixtureUseCase) GetSpamWordsHandler(w http.ResponseWriter, r *http.Request) {

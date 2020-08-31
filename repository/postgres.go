@@ -30,6 +30,7 @@ type FixtureRepositoryInterface interface {
 	EventIncrementer(fixureID int)
 	EventCounter(fixureID int) (int, error)
 	GetLastUpdate(chatID string) (int, error)
+	PredictionCounter(fixtureID int) (int, error)
 }
 
 type FixtureRepository struct {
@@ -396,4 +397,18 @@ func (r FixtureRepository) ZeroEventer(fixureID int) {
 func (r FixtureRepository) DateFix(fixureID int) {
 	date := time.Date(2020, time.Month(8), 1, 19, 30, 0, 0, time.UTC)
 	r.db.QueryRow("UPDATE fixtures SET date = $1 WHERE id = $2;", date, fixureID)
+}
+
+func (r FixtureRepository) PredictionCounter(fixtureID int) (int, error) {
+	query := `
+	SELECT COUNT(*) AS number_of_pred
+	FROM predictions where Fixture_id = $1`
+	row := r.db.QueryRow(query, fixtureID)
+	var count int
+	err := row.Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }

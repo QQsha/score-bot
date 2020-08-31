@@ -11,7 +11,6 @@ import (
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 	"github.com/rs/cors"
-	
 )
 
 func main() {
