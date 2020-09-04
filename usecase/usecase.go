@@ -326,6 +326,9 @@ func (u FixtureUseCase) MessageChecker() {
 }
 
 func (u FixtureUseCase) MessageHandler(message models.FullMessage, spamWords []models.Spam, englishPhrases, arsPhrases []string) {
+	if strconv.Itoa(message.Message.Chat.ID) != u.botRepo.GetChatID() {
+		return
+	}
 	if message.Message.Text == "" {
 		message.Message.Text = message.Message.Caption
 	}
@@ -353,14 +356,27 @@ func (u FixtureUseCase) MessageHandler(message models.FullMessage, spamWords []m
 	case "/leaderboard@chelseaAntiSpamBot":
 		u.GetLeaderboard()
 		return
-
+	case "/fantasy@chelseaAntiSpamBot":
+		post := posts.FantasyPost()
+		err := u.botRepo.SendPost(post, nil)
+		if err != nil {
+			u.log.Error(err)
+		}
+		return
 	case "/predict@chelseaAntiSpamBot":
 		err := u.botRepo.DeleteMessage(message.Message.MessageID)
 		if err != nil {
 			u.log.Error(err)
 		}
 		return
+	case "/predict":
+		err := u.botRepo.DeleteMessage(message.Message.MessageID)
+		if err != nil {
+			u.log.Error(err)
+		}
+		return
 	}
+
 	// predict check
 	if strings.Contains(strings.ToLower(message.Message.Text), "/predict") {
 		var homeTeamScore, awayTeamScore int

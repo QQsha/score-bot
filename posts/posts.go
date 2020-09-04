@@ -150,9 +150,9 @@ func CreateLeaderboardPost(winners []models.User) string {
 	if len(winners) == 0 {
 		return "*Prediction Leaderboard:* \n\n no win prediction yet"
 	}
-	post := "Prediction Leaderboard: \n\n"
+	post := "Prediction Leaderboard: \n"
 	for i, winner := range winners {
-		post += "*" + strconv.Itoa(i+1) + ".* [" + winner.FirstName + " " + winner.LastName + "](tg://user?id=" + strconv.Itoa(winner.ID) + ") \n"
+		post += "\n*№" + strconv.Itoa(i+1) + ".* " + winner.FirstName + " " + winner.LastName + " (wins: " + strconv.Itoa(winner.Wins) + ")"
 		for _, fixture := range winner.Fixtures {
 			post += fixture + "\n"
 		}
@@ -286,4 +286,8 @@ func GetArsenalPhrases() []string {
 		"Arsenal Best player of the Year - Anthony Taylor",
 	}
 	return phrases
+}
+func FantasyPost() string {
+	post := "JOIN our Chelsea Chat Fantasy League - \n https://fantasy.premierleague.com/leagues/auto-join/hhmmkb"
+	return post
 }
